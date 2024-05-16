@@ -53,15 +53,15 @@ def process_images(left_folder, right_folder, output_folder, calib_folder):
 
 
 # Paths for training and test datasets
-train_left_folder = base_folder+'Project_files/left/training'
-train_right_folder = base_folder+'Project_files/right/training'
-train_output_folder =  base_folder+'Project_files/depth_images/training'
-train_calib_folder = base_folder+ 'Project_files/calib/training'
+train_left_folder = base_folder+'Project_Files/left/training'
+train_right_folder = base_folder+'Project_Files/right/training'
+train_output_folder =  base_folder+'Project_Files/depth_images/training'
+train_calib_folder = base_folder+ 'Project_Files/calib/training'
 
-test_left_folder =  base_folder+'Project_files/left/testing'
-test_right_folder =  base_folder+'Project_files/right/testing'
-test_output_folder = base_folder+ 'Project_files/depth_images/testing'
-test_calib_folder = base_folder+ 'Project_files/calib/testing'
+test_left_folder =  base_folder+'Project_Files/left/testing'
+test_right_folder =  base_folder+'Project_Files/right/testing'
+test_output_folder = base_folder+ 'Project_Files/depth_images/testing'
+test_calib_folder = base_folder+ 'Project_Files/calib/testing'
 
 # Process training images
 process_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder)
