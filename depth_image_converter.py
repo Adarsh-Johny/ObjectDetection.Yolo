@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import os
 
+base_folder = "../"
+
 # Load camera calibration data
 def load_calib(calib_file):
     with open(calib_file, 'r') as f:
@@ -49,16 +51,17 @@ def process_images(left_folder, right_folder, output_folder, calib_folder):
             else:
                 print("Error: Unable to save depth map.")
 
-# Paths for training and test datasets
-train_left_folder = 'Project_files/left/training'
-train_right_folder = 'Project_files/right/training'
-train_output_folder = 'Project_files/depth_images/training'
-train_calib_folder = 'Project_files/calib/training'
 
-test_left_folder = 'Project_files/left/testing'
-test_right_folder = 'Project_files/right/testing'
-test_output_folder = 'Project_files/depth_images/testing'
-test_calib_folder = 'Project_files/calib/testing'
+# Paths for training and test datasets
+train_left_folder = base_folder+'Project_files/left/training'
+train_right_folder = base_folder+'Project_files/right/training'
+train_output_folder =  base_folder+'Project_files/depth_images/training'
+train_calib_folder = base_folder+ 'Project_files/calib/training'
+
+test_left_folder =  base_folder+'Project_files/left/testing'
+test_right_folder =  base_folder+'Project_files/right/testing'
+test_output_folder = base_folder+ 'Project_files/depth_images/testing'
+test_calib_folder = base_folder+ 'Project_files/calib/testing'
 
 # Process training images
 process_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder)
