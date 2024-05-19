@@ -1,1 +1,4 @@
 **/.DS_Store
+depth_images
+depth_images/*
+depth_images/
