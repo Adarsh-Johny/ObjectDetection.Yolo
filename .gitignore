@@ -12,3 +12,7 @@ stereoDepth/*
 stereoDepth
 stereoDepth/
 ./stereoDepth
+labels/*
+yolo_labels/*
+.DS_Store
+Project_Files/.DS_Store
