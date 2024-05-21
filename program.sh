@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name=assignment_1
+#SBATCH --job-name=Project_Viscando
 
 # Resource Allocation
 
