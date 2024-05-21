@@ -2,3 +2,9 @@
 depth_images
 depth_images/*
 depth_images/
+.DS_Store
+./.DS_Store
+*.DS_Store
+*/.DS_Store
+.DS_Store
+Project_Files/.DS_Store
