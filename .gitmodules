@@ -1,0 +1,3 @@
+[submodule "yolov5-traffic-monitoring"]
+	path = yolov5-traffic-monitoring
+	url = https://github.com/ktadoulas/yolov5-traffic-monitoring.git
