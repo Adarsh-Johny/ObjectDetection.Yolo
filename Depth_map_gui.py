@@ -145,9 +145,9 @@ if __name__ == '__main__':
 
         cv2.imshow('Disparity', disparity_image)
         cv2.imshow('Depth', depth_image)
-        cv2.imshow('Hyperparameters', leftFrame)  # Display dummy content
+        cv2.imshow('Hyperparameters', leftFrame)  
 
         if cv2.waitKey(1) == 27:
-            break
+            break 
 
     cv2.destroyAllWindows()
