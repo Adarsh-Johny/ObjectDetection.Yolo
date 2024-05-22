@@ -17,3 +17,7 @@ yolo_labels/*
 .DS_Store
 Project_Files/.DS_Store
 .DS_Store
+000008_left.png
+000008_right.png
+000008.txt
+Disparity_map_gui.py
