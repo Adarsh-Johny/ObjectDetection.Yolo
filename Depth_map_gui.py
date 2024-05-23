@@ -82,8 +82,6 @@ if __name__ == '__main__':
     K2 = P3[:, :3]
     R1 = R0_rect
     R2 = R0_rect
-    P1 = P2
-    P2 = P3
 
     # Extract focal length and baseline
     focal_length = K1[0, 0]  # Assuming fx is the same for both cameras
@@ -100,8 +98,8 @@ if __name__ == '__main__':
     height, width, _ = leftFrame.shape
 
     # Generate rectification maps
-    leftMapX, leftMapY = cv2.initUndistortRectifyMap(K1, None, R1, P1, (width, height), cv2.CV_32FC1)
-    rightMapX, rightMapY = cv2.initUndistortRectifyMap(K2, None, R2, P2, (width, height), cv2.CV_32FC1)
+    leftMapX, leftMapY = cv2.initUndistortRectifyMap(K1, None, R1, P2, (width, height), cv2.CV_32FC1)
+    rightMapX, rightMapY = cv2.initUndistortRectifyMap(K2, None, R2, P3, (width, height), cv2.CV_32FC1)
 
     left_rectified = cv2.remap(leftFrame, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
     right_rectified = cv2.remap(rightFrame, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
