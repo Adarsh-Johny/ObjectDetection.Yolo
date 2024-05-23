@@ -3,6 +3,11 @@ import cv2
 import argparse
 import sys
 
+'''
+Execute: python Depth_map_gui.py --calibration_file 000008.txt --left_image 000008_left.png --right_image 000008_right.png
+python Depth_map_gui.py --calibration_file Project_Files\calib\testing\000792.txt --left_image Project_Files\left\testing\000792.png --right_image Project_Files\right\testing\000792.png
+'''
+
 def nothing(x):
     pass
 
@@ -108,9 +113,9 @@ if __name__ == '__main__':
     gray_right = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2GRAY)
 
     cv2.namedWindow('Hyperparameters', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Hyperparameters', 400, 400)
+    cv2.resizeWindow('Hyperparameters', 700, 400)
 
-    cv2.createTrackbar('numDisparities', 'Hyperparameters', 1, 17, nothing)
+    cv2.createTrackbar('numDisparities', 'Hyperparameters', 1, 20, nothing)
     cv2.createTrackbar('blockSize', 'Hyperparameters', 5, 50, nothing)
     cv2.createTrackbar('preFilterCap', 'Hyperparameters', 5, 62, nothing)
     cv2.createTrackbar('uniquenessRatio', 'Hyperparameters', 10, 100, nothing)
@@ -121,10 +126,10 @@ if __name__ == '__main__':
 
 
     cv2.namedWindow('Disparity', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Disparity', 800, 600)
+    cv2.resizeWindow('Disparity', 700, 400)
     
     cv2.namedWindow('Depth', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Depth', 800, 600)
+    cv2.resizeWindow('Depth', 700, 400)
 
     while True:
         numDisparities = cv2.getTrackbarPos('numDisparities', 'Hyperparameters') * 16
