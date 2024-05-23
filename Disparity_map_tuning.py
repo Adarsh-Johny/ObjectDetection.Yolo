@@ -1,15 +1,91 @@
-import numpy as np
 import cv2
-import argparse
-import sys
+import numpy as np
 
-'''
-Execute: python Depth_map_gui.py --calibration_file 000008.txt --left_image 000008_left.png --right_image 000008_right.png
-python Depth_map_gui.py --calibration_file Project_Files\calib\testing\000792.txt --left_image Project_Files\left\testing\000792.png --right_image Project_Files\right\testing\000792.png
-'''
+# Function to analyze the image and return its condition
+def analyze_image(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Calculate brightness
+    brightness = np.mean(gray)
+    
+    # Calculate contrast
+    contrast = np.std(gray)
+    
+    # Calculate texture complexity (e.g., edge density)
+    edges = cv2.Canny(gray, 100, 200)
+    texture_complexity = np.mean(edges)
+    
+    # Calculate noise level
+    noise_level = np.var(gray)
+    
+    # Detect glare (simplistic approach)
+    glare_mask = gray > 240
+    glare_percentage = np.mean(glare_mask)
+    
+    # Detect shadows (simplistic approach)
+    shadow_mask = gray < 50
+    shadow_percentage = np.mean(shadow_mask)
+    
+    return {
+        'brightness': brightness,
+        'contrast': contrast,
+        'texture_complexity': texture_complexity,
+        'noise_level': noise_level,
+        'glare_percentage': glare_percentage,
+        'shadow_percentage': shadow_percentage
+    }
 
-def nothing(x):
-    pass
+# Function to get SGBM parameters based on image condition
+def get_sgbm_parameters(conditions):
+    # Default parameters
+    minDisparity = 0
+    numDisparities = 64
+    blockSize = 5
+    
+    # Adjust numDisparities and blockSize based on conditions
+    if conditions['brightness'] < 50:
+        numDisparities = 128
+        blockSize = 9
+    elif conditions['brightness'] > 200:
+        numDisparities = 64
+        blockSize = 5
+    else:
+        numDisparities = 96
+        blockSize = 7
+
+    if conditions['contrast'] < 50:
+        numDisparities = 64
+        blockSize = 11
+
+    if conditions['texture_complexity'] > 100:
+        numDisparities = 128
+        blockSize = 7
+
+    if conditions['noise_level'] > 1000:
+        numDisparities = 128
+        blockSize = 11
+
+    if conditions['glare_percentage'] > 0.1:
+        numDisparities = 64
+        blockSize = 5
+
+    if conditions['shadow_percentage'] > 0.1:
+        numDisparities = 128
+        blockSize = 9
+
+    return {
+        'minDisparity': minDisparity,
+        'numDisparities': numDisparities,
+        'blockSize': blockSize,
+        'P1': 8 * 3 * blockSize ** 2,
+        'P2': 32 * 3 * blockSize ** 2,
+        'disp12MaxDiff': 1,
+        'preFilterCap': 63,
+        'uniquenessRatio': 10,
+        'speckleWindowSize': 100,
+        'speckleRange': 32,
+        'mode': cv2.STEREO_SGBM_MODE_SGBM_3WAY
+    }
 
 def depth_map(imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity):
     """ Depth map calculation with dynamic parameters. """
@@ -45,7 +121,6 @@ def depth_map(imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRat
     filtered_img = np.uint8(filtered_img)
 
     return filtered_img
-
 def parse_matrix_from_file(file_path, matrix_name):
     with open(file_path, 'r') as file:
         for line in file:
@@ -112,45 +187,22 @@ if __name__ == '__main__':
     gray_left = cv2.cvtColor(left_rectified, cv2.COLOR_BGR2GRAY)
     gray_right = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2GRAY)
 
-    cv2.namedWindow('Hyperparameters', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Hyperparameters', 700, 400)
-
-    cv2.createTrackbar('numDisparities', 'Hyperparameters', 1, 20, nothing)
-    cv2.createTrackbar('blockSize', 'Hyperparameters', 5, 50, nothing)
-    cv2.createTrackbar('preFilterCap', 'Hyperparameters', 5, 62, nothing)
-    cv2.createTrackbar('uniquenessRatio', 'Hyperparameters', 10, 100, nothing)
-    cv2.createTrackbar('speckleWindowSize', 'Hyperparameters', 3, 25, nothing)
-    cv2.createTrackbar('speckleRange', 'Hyperparameters', 0, 100, nothing)
-    cv2.createTrackbar('disp12MaxDiff', 'Hyperparameters', 5, 25, nothing)
-    cv2.createTrackbar('minDisparity', 'Hyperparameters', 0, 25, nothing)
-
-
     cv2.namedWindow('Disparity', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Disparity', 700, 400)
     
     cv2.namedWindow('Depth', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Depth', 700, 400)
+    
+# Analyze the left image (you can analyze both images if needed)
+conditions = analyze_image(leftFrame)
 
-    while True:
-        numDisparities = cv2.getTrackbarPos('numDisparities', 'Hyperparameters') * 16
-        blockSize = cv2.getTrackbarPos('blockSize', 'Hyperparameters') * 2 + 5
-        preFilterCap = cv2.getTrackbarPos('preFilterCap', 'Hyperparameters')
-        uniquenessRatio = cv2.getTrackbarPos('uniquenessRatio', 'Hyperparameters')
-        speckleWindowSize = cv2.getTrackbarPos('speckleWindowSize', 'Hyperparameters') * 2
-        speckleRange = cv2.getTrackbarPos('speckleRange', 'Hyperparameters')
-        disp12MaxDiff = cv2.getTrackbarPos('disp12MaxDiff', 'Hyperparameters')
-        minDisparity = cv2.getTrackbarPos('minDisparity', 'Hyperparameters')
+# Get appropriate SGBM parameters based on the conditions
+sgbm_params = get_sgbm_parameters(conditions)
 
-        disparity_image = depth_map(gray_left, gray_right, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity)
+# Compute the disparity map
+disparity = depth_map(gray_left, gray_right, sgbm_params)
 
-        # Convert disparity map to depth map
-        depth_image = disparity_to_depth(disparity_image, focal_length, baseline)
-
-        cv2.imshow('Disparity', disparity_image)
-        cv2.imshow('Depth', depth_image)
-        cv2.imshow('Hyperparameters', leftFrame)  
-
-        if cv2.waitKey(1) == 27:
-            break 
-
-    cv2.destroyAllWindows()
+# Display the disparity map
+cv2.imshow('Disparity', (disparity - disparity.min()) / (disparity.max() - disparity.min()))
+cv2.waitKey(0)
+cv2.destroyAllWindows()
