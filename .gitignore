@@ -22,3 +22,5 @@ Project_Files/.DS_Store
 000008.txt
 Disparity_map_gui.py
 .DS_Store
+__pycache__/
+.DS_Store

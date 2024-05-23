@@ -1,70 +1,134 @@
-import cv2
-import numpy as np
 import os
+import glob
+import numpy as np
+import cv2
 
-base_folder = "../"
+class StereoDepthMapConverter:
+    def __init__(self, left_images_dir, right_images_dir, calibration_dir, output_dir):
+        self.left_images_dir = left_images_dir
+        self.right_images_dir = right_images_dir
+        self.calibration_dir = calibration_dir
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
 
-# Load camera calibration data
-def load_calib(calib_file):
-    with open(calib_file, 'r') as f:
-        lines = f.readlines()
-        P0 = np.array([float(x) for x in lines[0].split(':')[1].strip().split()]).reshape(3, 4)
-        P1 = np.array([float(x) for x in lines[1].split(':')[1].strip().split()]).reshape(3, 4)
-        
-        # Pad P0 with a bottom row of [0, 0, 0, 1] to make it 4x4
-        P0 = np.vstack((P0, np.array([0, 0, 0, 1])))
-    return P0, P1
+    def parse_matrix_from_file(self, file_path, matrix_name):
+        with open(file_path, 'r') as file:
+            for line in file:
+                if line.startswith(matrix_name):
+                    values = list(map(float, line.split(':')[1].strip().split()))
+                    return np.array(values).reshape((3, 4) if 'P' in matrix_name else (3, 3))
+        raise ValueError(f"Matrix {matrix_name} not found in file {file_path}")
 
-def process_images(left_folder, right_folder, output_folder, calib_folder):
-    # List all files in the left folder
-    left_files = os.listdir(left_folder)
+    def parse_translation_vector(self, file_path):
+        with open(file_path, 'r') as file:
+            for line in file:
+                if line.startswith('Tr_velo_to_cam'):
+                    values = list(map(float, line.split(':')[1].strip().split()))
+                    return np.array(values).reshape((3, 4))
+        raise ValueError(f"Translation vector Tr_velo_to_cam not found in file {file_path}")
 
-    for left_file in left_files:
-        if left_file.endswith('.png'):
-            # Form corresponding paths for left and right images and calibration data
-            left_image_path = os.path.join(left_folder, left_file)
-            right_image_path = os.path.join(right_folder, left_file)
-            calib_file = os.path.join(calib_folder, left_file.replace('.png', '.txt'))
+    def depth_map(self, imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity):
+        """Depth map calculation with dynamic parameters."""
+        left_matcher = cv2.StereoSGBM_create(
+            minDisparity=minDisparity,
+            numDisparities=numDisparities,
+            blockSize=blockSize,
+            P1=8 * 3 * blockSize ** 2,
+            P2=32 * 3 * blockSize ** 2,
+            disp12MaxDiff=disp12MaxDiff,
+            uniquenessRatio=uniquenessRatio,
+            speckleWindowSize=speckleWindowSize,
+            speckleRange=speckleRange,
+            preFilterCap=preFilterCap,
+            mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
+        )
 
-            # Load camera calibration data
-            P0, P1 = load_calib(calib_file)
+        right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
 
-            # Load left and right images
-            left_img = cv2.imread(left_image_path)
-            right_img = cv2.imread(right_image_path)
+        lmbda = 80000
+        sigma = 1.5
 
-            # Create a StereoSGBM object
-            stereo = cv2.StereoSGBM_create(numDisparities=112, blockSize=15)
+        wls_filter = cv2.ximgproc.createDisparityWLSFilter(matcher_left=left_matcher)
+        wls_filter.setLambda(lmbda)
+        wls_filter.setSigmaColor(sigma)
 
-            # Compute the disparity map
-            disparity = stereo.compute(left_img, right_img)
+        displ = left_matcher.compute(imgL, imgR).astype(np.int16)
+        dispr = right_matcher.compute(imgR, imgL).astype(np.int16)
+        filtered_img = wls_filter.filter(displ, imgL, None, dispr)
 
-            # Reproject the disparity map to 3D space to obtain the depth map
-            depth_map = cv2.reprojectImageTo3D(disparity, P0)
+        # Normalize the filtered disparity map for visualization
+        filtered_img = cv2.normalize(filtered_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+        filtered_img = np.uint8(filtered_img)
 
-            # Save the depth map as a PNG file with the same name in the output folder
-            output_file = os.path.join(output_folder, left_file.replace('.png', '_depth.png'))
-            print("Saving depth map to:", output_file)
-            success = cv2.imwrite(output_file, depth_map)
-            if success:
-                print("Depth map saved successfully.")
-            else:
-                print("Error: Unable to save depth map.")
+        return filtered_img
 
+    def disparity_to_depth(self, disparity, focal_length, baseline):
+        """Convert disparity map to depth map."""
+        with np.errstate(divide='ignore'):
+            depth = (focal_length * baseline) / disparity
+        depth[disparity == 0] = 0  # Mask out disparity values of 0 (infinite depth)
+        return depth
 
-# Paths for training and test datasets
-train_left_folder = base_folder+'Project_Files/left/training'
-train_right_folder = base_folder+'Project_Files/right/training'
-train_output_folder =  base_folder+'Project_Files/depth_images/training'
-train_calib_folder = base_folder+ 'Project_Files/calib/training'
+    def process_images(self):
+        left_images = sorted(glob.glob(os.path.join(self.left_images_dir, '*.png')))
+        right_images = sorted(glob.glob(os.path.join(self.right_images_dir, '*.png')))
+        calibration_files = sorted(glob.glob(os.path.join(self.calibration_dir, '*.txt')))
 
-test_left_folder =  base_folder+'Project_Files/left/testing'
-test_right_folder =  base_folder+'Project_Files/right/testing'
-test_output_folder = base_folder+ 'Project_Files/depth_images/testing'
-test_calib_folder = base_folder+ 'Project_Files/calib/testing'
+        for left_image_path, right_image_path, calibration_file_path in zip(left_images, right_images, calibration_files):
+            if os.path.basename(left_image_path).replace('.png', '') != os.path.basename(right_image_path).replace('.png', '') or os.path.basename(left_image_path).replace('.png', '') != os.path.basename(calibration_file_path).replace('.txt', ''):
+                print(f"File names do not match: {left_image_path}, {right_image_path}, {calibration_file_path}")
+                continue
 
-# Process training images
-process_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder)
+            # Parse matrices from the calibration file
+            P2 = self.parse_matrix_from_file(calibration_file_path, 'P2')
+            P3 = self.parse_matrix_from_file(calibration_file_path, 'P3')
+            R0_rect = self.parse_matrix_from_file(calibration_file_path, 'R0_rect')
+            T = self.parse_translation_vector(calibration_file_path)
 
-# Process test images
-process_images(test_left_folder, test_right_folder, test_output_folder, test_calib_folder)
+            K1 = P2[:, :3]
+            K2 = P3[:, :3]
+            R1 = R0_rect
+            R2 = R0_rect
+
+            # Extract focal length and baseline
+            focal_length = K1[0, 0]  # Assuming fx is the same for both cameras
+            baseline = np.linalg.norm(T[:, 3])  # Baseline is the norm of the translation vector
+
+            # Read the images
+            left_image = cv2.imread(left_image_path)
+            right_image = cv2.imread(right_image_path)
+
+            if left_image is None or right_image is None:
+                print(f"Can't open images: {left_image_path}, {right_image_path}")
+                continue
+
+            height, width, _ = left_image.shape
+
+            # Generate rectification maps
+            leftMapX, leftMapY = cv2.initUndistortRectifyMap(K1, None, R1, P2, (width, height), cv2.CV_32FC1)
+            rightMapX, rightMapY = cv2.initUndistortRectifyMap(K2, None, R2, P3, (width, height), cv2.CV_32FC1)
+
+            left_rectified = cv2.remap(left_image, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
+            right_rectified = cv2.remap(right_image, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
+
+            gray_left = cv2.cvtColor(left_rectified, cv2.COLOR_BGR2GRAY)
+            gray_right = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2GRAY)
+
+            # Set default parameters for depth map calculation
+            numDisparities = 16 * 6
+            blockSize = 11
+            preFilterCap = 31
+            uniquenessRatio = 15
+            speckleWindowSize = 200
+            speckleRange = 2
+            disp12MaxDiff = 1
+            minDisparity = 0
+
+            disparity_image = self.depth_map(gray_left, gray_right, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity)
+
+            # Convert disparity map to depth map
+            depth_image = self.disparity_to_depth(disparity_image, focal_length, baseline)
+
+            # Save the depth image
+            output_depth_image_path = os.path.join(self.output_dir, os.path.basename(left_image_path))
+            cv2.imwrite(output_depth_image_path, depth_image)
