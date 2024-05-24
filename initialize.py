@@ -24,19 +24,71 @@ converter.convert()
 # converter.process_images()
 
 
-
-# destination_dir = '../Project_Files/right/training/image_3'
-
-# file_copier = FileCopier(yolo_labels_dir, destination_dir)
-# file_copier.copy_files()
+import os
 
 
-# # Split Right dataset to validation and training
-# train_images_dir = "../Project_Files/right/training/image_3"
-# train_labels_dir = "../Project_Files/right/training/image_3/labels/training"
-# val_images_dir = "../Project_Files/right/training/image_3/images/validation"
-# val_labels_dir = "../Project_Files/right/training/image_3/labels/validation"
-# num_val_files = 481
+# RIGHT IMAGES
 
-# splitter = DatasetSplitter(train_images_dir, train_labels_dir, val_images_dir, val_labels_dir, num_val_files)
-# splitter.split()
+# Define the source directories
+image_src_dir = "../Project_Files/right/training/image_3"
+labels_src_dir = "../Project_Files/labels"
+testing_src_dir = "../Project_Files/right/testing/image_3"
+
+# Define the destination directories
+base_dest_dir = "../Project_Files/dataset/right"
+images_train_dest_dir = os.path.join(base_dest_dir, "images/train")
+labels_train_dest_dir = os.path.join(base_dest_dir, "labels/train")
+images_val_dest_dir = os.path.join(base_dest_dir, "images/val")
+labels_val_dest_dir = os.path.join(base_dest_dir, "labels/val")
+images_test_dest_dir = os.path.join(base_dest_dir, "images/test")
+
+# Copy image files to the new structure
+image_copier = FileCopier(image_src_dir, images_train_dest_dir)
+image_copier.copy_files()
+
+# Copy label files to the new structure
+label_copier = FileCopier(labels_src_dir, labels_train_dest_dir)
+label_copier.copy_files()
+
+# Copy testing images to the new structure
+testing_copier = FileCopier(testing_src_dir, images_test_dest_dir)
+testing_copier.copy_files()
+
+# Split the dataset into training and validation sets
+num_val_files = 481
+splitter = DatasetSplitter(images_train_dest_dir, labels_train_dest_dir, images_val_dest_dir, labels_val_dest_dir, num_val_files)
+splitter.split()
+
+
+# LEFT IMAGES
+
+
+# Define the source directories
+image_src_dir = "../Project_Files/left/training/image_2"
+labels_src_dir = "../Project_Files/labels"
+testing_src_dir = "../Project_Files/left/testing/image_2"
+
+# Define the destination directories
+base_dest_dir = "../Project_Files/dataset/left"
+images_train_dest_dir = os.path.join(base_dest_dir, "images/train")
+labels_train_dest_dir = os.path.join(base_dest_dir, "labels/train")
+images_val_dest_dir = os.path.join(base_dest_dir, "images/val")
+labels_val_dest_dir = os.path.join(base_dest_dir, "labels/val")
+images_test_dest_dir = os.path.join(base_dest_dir, "images/test")
+
+# Copy image files to the new structure
+image_copier = FileCopier(image_src_dir, images_train_dest_dir)
+image_copier.copy_files()
+
+# Copy label files to the new structure
+label_copier = FileCopier(labels_src_dir, labels_train_dest_dir)
+label_copier.copy_files()
+
+# Copy testing images to the new structure
+testing_copier = FileCopier(testing_src_dir, images_test_dest_dir)
+testing_copier.copy_files()
+
+# Split the dataset into training and validation sets
+num_val_files = 481
+splitter = DatasetSplitter(images_train_dest_dir, labels_train_dest_dir, images_val_dest_dir, labels_val_dest_dir, num_val_files)
+splitter.split()
