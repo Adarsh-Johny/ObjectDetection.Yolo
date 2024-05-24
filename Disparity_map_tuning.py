@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 
@@ -87,19 +88,19 @@ def get_sgbm_parameters(conditions):
         'mode': cv2.STEREO_SGBM_MODE_SGBM_3WAY
     }
 
-def depth_map(imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity):
+def depth_map(imgL, imgR, sgbm_params):
     """ Depth map calculation with dynamic parameters. """
     left_matcher = cv2.StereoSGBM_create(
-        minDisparity=minDisparity,
-        numDisparities=numDisparities,
-        blockSize=blockSize,
-        P1=8 * 3 * blockSize ** 2,
-        P2=32 * 3 * blockSize ** 2,
-        disp12MaxDiff=disp12MaxDiff,
-        uniquenessRatio=uniquenessRatio,
-        speckleWindowSize=speckleWindowSize,
-        speckleRange=speckleRange,
-        preFilterCap=preFilterCap,
+        minDisparity=sgbm_params['minDisparity'],
+        numDisparities=sgbm_params['numDisparities'],
+        blockSize=sgbm_params['blockSize'],
+        P1=8 * 3 * sgbm_params['blockSize'] ** 2,
+        P2=32 * 3 * sgbm_params['blockSize'] ** 2,
+        disp12MaxDiff=sgbm_params['disp12MaxDiff'],
+        uniquenessRatio=sgbm_params['uniquenessRatio'],
+        speckleWindowSize=sgbm_params['speckleWindowSize'],
+        speckleRange=sgbm_params['speckleRange'],
+        preFilterCap=sgbm_params['preFilterCap'],
         mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
     )
 
@@ -121,6 +122,7 @@ def depth_map(imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRat
     filtered_img = np.uint8(filtered_img)
 
     return filtered_img
+
 def parse_matrix_from_file(file_path, matrix_name):
     with open(file_path, 'r') as file:
         for line in file:
@@ -144,65 +146,77 @@ def disparity_to_depth(disparity, focal_length, baseline):
     depth[disparity == 0] = 0  # Mask out disparity values of 0 (infinite depth)
     return depth
 
+def process_folder(left_folder, right_folder, calib_folder, output_folder):
+    for subfolder in ['training', 'testing']:
+        left_path = os.path.join(left_folder, subfolder)
+        right_path = os.path.join(right_folder, subfolder)
+        calib_path = os.path.join(calib_folder, 'training')  # Assuming calib has only 'training'
+        output_path = os.path.join(output_folder, subfolder)
+
+        os.makedirs(output_path, exist_ok=True)
+
+        for file_name in os.listdir(left_path):
+            if file_name.endswith('.png'):
+                left_image_path = os.path.join(left_path, file_name)
+                right_image_path = os.path.join(right_path, file_name)
+                calib_file_path = os.path.join(calib_path, file_name.replace('.png', '.txt'))
+
+                # Parse matrices from the calibration file
+                P2 = parse_matrix_from_file(calib_file_path, 'P2')
+                P3 = parse_matrix_from_file(calib_file_path, 'P3')
+                R0_rect = parse_matrix_from_file(calib_file_path, 'R0_rect')
+                T = parse_translation_vector(calib_file_path)
+
+                K1 = P2[:, :3]
+                K2 = P3[:, :3]
+                R1 = R0_rect
+                R2 = R0_rect
+
+                # Extract focal length and baseline
+                focal_length = K1[0, 0]  # Assuming fx is the same for both cameras
+                baseline = np.linalg.norm(T[:, 3])  # Baseline is the norm of the translation vector
+
+                # Read the images
+                leftFrame = cv2.imread(left_image_path)
+                rightFrame = cv2.imread(right_image_path)
+
+                if leftFrame is None or rightFrame is None:
+                    print(f"Can't open the images: {file_name}")
+                    continue
+
+                height, width, _ = leftFrame.shape
+
+                # Generate rectification maps
+                leftMapX, leftMapY = cv2.initUndistortRectifyMap(K1, None, R1, P2, (width, height), cv2.CV_32FC1)
+                rightMapX, rightMapY = cv2.initUndistortRectifyMap(K2, None, R2, P3, (width, height), cv2.CV_32FC1)
+
+                left_rectified = cv2.remap(leftFrame, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
+                right_rectified = cv2.remap(rightFrame, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
+
+                gray_left = cv2.cvtColor(left_rectified, cv2.COLOR_BGR2GRAY)
+                gray_right = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2GRAY)
+
+                # Analyze the left image (you can analyze both images if needed)
+                conditions = analyze_image(leftFrame)
+
+                # Get appropriate SGBM parameters based on the conditions
+                sgbm_params = get_sgbm_parameters(conditions)
+
+                # Compute the disparity map
+                disparity = depth_map(gray_left, gray_right, sgbm_params)
+
+                # Convert disparity to depth map
+                depth = disparity_to_depth(disparity, focal_length, baseline)
+
+                # Save the depth map
+                output_depth_path = os.path.join(output_path, file_name)
+                cv2.imwrite(output_depth_path, depth)
+                print(f"Processed and saved depth map for: {file_name}")
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Stereo depth map with hyperparameter tuning GUI')
-    parser.add_argument('--calibration_file', type=str, required=True, help='Path to the calibration file')
-    parser.add_argument('--left_image', type=str, required=True, help='Path to the left image')
-    parser.add_argument('--right_image', type=str, required=True, help='Path to the right image')
+    left_folder = './Project_Files/left'
+    right_folder = './Project_Files/right'
+    calib_folder = './Project_Files/calib'
+    output_folder = './Project_Files/depth_output'
 
-    args = parser.parse_args()
-
-    # Parse matrices from the calibration file
-    P2 = parse_matrix_from_file(args.calibration_file, 'P2')
-    P3 = parse_matrix_from_file(args.calibration_file, 'P3')
-    R0_rect = parse_matrix_from_file(args.calibration_file, 'R0_rect')
-    T = parse_translation_vector(args.calibration_file)
-
-    K1 = P2[:, :3]
-    K2 = P3[:, :3]
-    R1 = R0_rect
-    R2 = R0_rect
-
-    # Extract focal length and baseline
-    focal_length = K1[0, 0]  # Assuming fx is the same for both cameras
-    baseline = np.linalg.norm(T[:, 3])  # Baseline is the norm of the translation vector
-
-    # Read the images
-    leftFrame = cv2.imread(args.left_image)
-    rightFrame = cv2.imread(args.right_image)
-
-    if leftFrame is None or rightFrame is None:
-        print("Can't open the images!")
-        sys.exit(-9)
-
-    height, width, _ = leftFrame.shape
-
-    # Generate rectification maps
-    leftMapX, leftMapY = cv2.initUndistortRectifyMap(K1, None, R1, P2, (width, height), cv2.CV_32FC1)
-    rightMapX, rightMapY = cv2.initUndistortRectifyMap(K2, None, R2, P3, (width, height), cv2.CV_32FC1)
-
-    left_rectified = cv2.remap(leftFrame, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
-    right_rectified = cv2.remap(rightFrame, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
-
-    gray_left = cv2.cvtColor(left_rectified, cv2.COLOR_BGR2GRAY)
-    gray_right = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2GRAY)
-
-    cv2.namedWindow('Disparity', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Disparity', 700, 400)
-    
-    cv2.namedWindow('Depth', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Depth', 700, 400)
-    
-# Analyze the left image (you can analyze both images if needed)
-conditions = analyze_image(leftFrame)
-
-# Get appropriate SGBM parameters based on the conditions
-sgbm_params = get_sgbm_parameters(conditions)
-
-# Compute the disparity map
-disparity = depth_map(gray_left, gray_right, sgbm_params)
-
-# Display the disparity map
-cv2.imshow('Disparity', (disparity - disparity.min()) / (disparity.max() - disparity.min()))
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+    process_folder(left_folder, right_folder, calib_folder, output_folder)
