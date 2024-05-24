@@ -33,4 +33,3 @@ class DatasetSplitter:
         self.move_files(self.val_image_files, self.train_images_dir, self.val_images_dir)
         self.move_files(self.val_label_files, self.train_labels_dir, self.val_labels_dir)
         print("Dataset split into training and validation sets successfully.")
-
