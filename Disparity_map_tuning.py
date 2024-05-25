@@ -147,7 +147,7 @@ def disparity_to_depth(disparity, focal_length, baseline):
     return depth
 
 def process_folder(left_folder, right_folder, calib_folder, output_folder):
-    for subfolder in ['training', 'testing']:
+    for subfolder in ['training']:  #, 'testing'
         left_path = os.path.join(left_folder, subfolder)
         right_path = os.path.join(right_folder, subfolder)
         calib_path = os.path.join(calib_folder, 'training')  # Assuming calib has only 'training'
@@ -198,9 +198,10 @@ def process_folder(left_folder, right_folder, calib_folder, output_folder):
 
                 # Analyze the left image (you can analyze both images if needed)
                 conditions = analyze_image(leftFrame)
-
+                print("conditions",conditions,"\n\n")
                 # Get appropriate SGBM parameters based on the conditions
                 sgbm_params = get_sgbm_parameters(conditions)
+                print("sgbm_params",sgbm_params)
 
                 # Compute the disparity map
                 disparity = depth_map(gray_left, gray_right, sgbm_params)
