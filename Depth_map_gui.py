@@ -5,7 +5,7 @@ import sys
 
 '''
 Execute: python Depth_map_gui.py --calibration_file 000008.txt --left_image 000008_left.png --right_image 000008_right.png
-python Depth_map_gui.py --calibration_file Project_Files\calib\testing\000792.txt --left_image Project_Files\left\testing\000792.png --right_image Project_Files\right\testing\000792.png
+python Depth_map_gui.py --calibration_file Project_Files\calib\testing\000003.txt --left_image Project_Files\left\testing\000003.png --right_image Project_Files\right\testing\000003.png
 '''
 
 def nothing(x):
@@ -40,9 +40,9 @@ def depth_map(imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRat
     dispr = right_matcher.compute(imgR, imgL).astype(np.int16)
     filtered_img = wls_filter.filter(displ, imgL, None, dispr)
 
-    # Normalize the filtered disparity map for visualization
-    filtered_img = cv2.normalize(filtered_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-    filtered_img = np.uint8(filtered_img)
+    # # Normalize the filtered disparity map for visualization
+    # filtered_img = cv2.normalize(filtered_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+    # filtered_img = np.uint8(filtered_img)
 
     return filtered_img
 

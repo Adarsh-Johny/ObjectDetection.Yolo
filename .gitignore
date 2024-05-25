@@ -24,3 +24,6 @@ Disparity_map_gui.py
 .DS_Store
 __pycache__/
 .DS_Store
+depth_image_experiments.ipynb
+Depth_map_gui.py
+depthmap_test.py
