@@ -20,10 +20,9 @@ Project_Files/.DS_Store
 000008_left.png
 000008_right.png
 000008.txt
-Disparity_map_gui.py
 .DS_Store
 __pycache__/
 .DS_Store
-depth_image_experiments.ipynb
-Depth_map_gui.py
-depthmap_test.py
+Project_Files/depth_output_2/*
+Project_Files/.DS_Store
+.DS_Store
