@@ -3,6 +3,11 @@ import cv2
 import argparse
 import sys
 
+'''
+python stereo_to_depth.py --calibration_file Project_Files\calib\testing\000003.txt --left_image Project_Files\left\testing\000003.png --right_image Project_Files\right\testing\000003.png
+
+'''
+
 def nothing(x):
     pass
 
@@ -132,7 +137,7 @@ if __name__ == '__main__':
             left_RGB, right_RGB, focal_length, baseline, numDisparities, blockSize,
             preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity
         )
-
+        
         cv2.imshow('Disparity', disparity_image)
         cv2.imshow('Depth', disparity_image)
         cv2.imshow('Hyperparameters', leftFrame)  
