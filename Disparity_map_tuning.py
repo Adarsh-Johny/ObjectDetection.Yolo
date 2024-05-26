@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Function to analyze the image and return its condition
 def analyze_image(image):
@@ -123,6 +124,12 @@ def depth_map(imgL, imgR, sgbm_params):
 
     return filtered_img
 
+def save_depth_map(depth_map, output_path):
+    plt.imshow(depth_map, cmap='viridis')
+    plt.axis('off')
+    plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
+    plt.close()
+
 def parse_matrix_from_file(file_path, matrix_name):
     with open(file_path, 'r') as file:
         for line in file:
@@ -147,7 +154,7 @@ def disparity_to_depth(disparity, focal_length, baseline):
     return depth
 
 def process_folder(left_folder, right_folder, calib_folder, output_folder):
-    for subfolder in ['training']:  #, 'testing'
+    for subfolder in ['training']:  # , 'testing'
         left_path = os.path.join(left_folder, subfolder)
         right_path = os.path.join(right_folder, subfolder)
         calib_path = os.path.join(calib_folder, 'training')  # Assuming calib has only 'training'
@@ -198,10 +205,10 @@ def process_folder(left_folder, right_folder, calib_folder, output_folder):
 
                 # Analyze the left image (you can analyze both images if needed)
                 conditions = analyze_image(leftFrame)
-                print("conditions",conditions,"\n\n")
+                print("conditions", conditions, "\n\n")
                 # Get appropriate SGBM parameters based on the conditions
                 sgbm_params = get_sgbm_parameters(conditions)
-                print("sgbm_params",sgbm_params)
+                print("sgbm_params", sgbm_params)
 
                 # Compute the disparity map
                 disparity = depth_map(gray_left, gray_right, sgbm_params)
@@ -209,9 +216,9 @@ def process_folder(left_folder, right_folder, calib_folder, output_folder):
                 # Convert disparity to depth map
                 depth = disparity_to_depth(disparity, focal_length, baseline)
 
-                # Save the depth map
-                output_depth_path = os.path.join(output_path, file_name)
-                cv2.imwrite(output_depth_path, depth)
+                # Save the depth map with viridis colormap
+                output_depth_path = os.path.join(output_path, file_name.replace('.png', '_depth.png'))
+                save_depth_map(depth, output_depth_path)
                 print(f"Processed and saved depth map for: {file_name}")
 
 if __name__ == '__main__':
