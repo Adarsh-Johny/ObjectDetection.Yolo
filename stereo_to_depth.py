@@ -3,48 +3,8 @@ import cv2
 import argparse
 import sys
 
-'''
-Execute: python Depth_map_gui.py --calibration_file 000008.txt --left_image 000008_left.png --right_image 000008_right.png
-python Depth_map_gui.py --calibration_file Project_Files\calib\testing\000003.txt --left_image Project_Files\left\testing\000003.png --right_image Project_Files\right\testing\000003.png
-'''
-
 def nothing(x):
     pass
-
-def depth_map(imgL, imgR, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity):
-    """ Depth map calculation with dynamic parameters. """
-    left_matcher = cv2.StereoSGBM_create(
-        minDisparity=minDisparity,
-        numDisparities=numDisparities,
-        blockSize=blockSize,
-        P1=8 * 3 * blockSize ** 2,
-        P2=32 * 3 * blockSize ** 2,
-        disp12MaxDiff=disp12MaxDiff,
-        uniquenessRatio=uniquenessRatio,
-        speckleWindowSize=speckleWindowSize,
-        speckleRange=speckleRange,
-        preFilterCap=preFilterCap,
-        mode=cv2.STEREO_SGBM_MODE_SGBM_3WAY
-    )
-
-    right_matcher = cv2.ximgproc.createRightMatcher(left_matcher)
-
-    lmbda = 80000
-    sigma = 1.5
-
-    wls_filter = cv2.ximgproc.createDisparityWLSFilter(matcher_left=left_matcher)
-    wls_filter.setLambda(lmbda)
-    wls_filter.setSigmaColor(sigma)
-
-    displ = left_matcher.compute(imgL, imgR).astype(np.int16)
-    dispr = right_matcher.compute(imgR, imgL).astype(np.int16)
-    filtered_img = wls_filter.filter(displ, imgL, None, dispr)
-
-    # # Normalize the filtered disparity map for visualization
-    # filtered_img = cv2.normalize(filtered_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-    # filtered_img = np.uint8(filtered_img)
-
-    return filtered_img
 
 def parse_matrix_from_file(file_path, matrix_name):
     with open(file_path, 'r') as file:
@@ -62,12 +22,32 @@ def parse_translation_vector(file_path):
                 return np.array(values).reshape((3, 4))
     raise ValueError(f"Translation vector Tr_velo_to_cam not found in file {file_path}")
 
-def disparity_to_depth(disparity, focal_length, baseline):
-    """Convert disparity map to depth map."""
+def get_stereo_map(left_RGB, right_RGB, focal_pix_RGB, baseline_m_RGB, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity):
+    # Compute depth map from stereo
+    stereo = cv2.StereoBM_create()
+    stereo.setMinDisparity(minDisparity)
+    stereo.setNumDisparities(numDisparities)
+    stereo.setBlockSize(blockSize)
+    stereo.setSpeckleRange(speckleRange)
+    stereo.setSpeckleWindowSize(speckleWindowSize)
+    stereo.setPreFilterCap(preFilterCap)
+    stereo.setUniquenessRatio(uniquenessRatio)
+    stereo.setDisp12MaxDiff(disp12MaxDiff)
+
+    left_gray = cv2.cvtColor(np.array(left_RGB), cv2.COLOR_RGB2GRAY)
+    right_gray = cv2.cvtColor(np.array(right_RGB), cv2.COLOR_RGB2GRAY)
+
+    stereo_depth_map = stereo.compute(left_gray, right_gray)
+
+    # By equation + divide by 16 to get true disparities
     with np.errstate(divide='ignore'):
-        depth = (focal_length * baseline) / disparity
-    depth[disparity == 0] = 0  # Mask out disparity values of 0 (infinite depth)
-    return depth
+        stereo_depth_map = (focal_pix_RGB * baseline_m_RGB) / (stereo_depth_map / 16)
+    stereo_depth_map[stereo_depth_map == np.inf] = 0
+    stereo_depth_map[stereo_depth_map == -np.inf] = 0
+    stereo_depth_map[np.isnan(stereo_depth_map)] = 0
+    stereo_depth_map[stereo_depth_map <= 0] = 0  # Ensure no division by zero
+
+    return stereo_depth_map
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Stereo depth map with hyperparameter tuning GUI')
@@ -78,10 +58,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Parse matrices from the calibration file
-    P2 = parse_matrix_from_file(args.calibration_file, 'P2')
-    P3 = parse_matrix_from_file(args.calibration_file, 'P3')
-    R0_rect = parse_matrix_from_file(args.calibration_file, 'R0_rect')
-    T = parse_translation_vector(args.calibration_file)
+    try:
+        P2 = parse_matrix_from_file(args.calibration_file, 'P2')
+        P3 = parse_matrix_from_file(args.calibration_file, 'P3')
+        R0_rect = parse_matrix_from_file(args.calibration_file, 'R0_rect')
+        T = parse_translation_vector(args.calibration_file)
+    except ValueError as e:
+        print(e)
+        sys.exit(-1)
 
     K1 = P2[:, :3]
     K2 = P3[:, :3]
@@ -109,21 +93,22 @@ if __name__ == '__main__':
     left_rectified = cv2.remap(leftFrame, leftMapX, leftMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
     right_rectified = cv2.remap(rightFrame, rightMapX, rightMapY, cv2.INTER_LINEAR, cv2.BORDER_CONSTANT)
 
-    gray_left = cv2.cvtColor(left_rectified, cv2.COLOR_BGR2GRAY)
-    gray_right = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2GRAY)
+    # Convert to RGB for the get_stereo_map function
+    left_RGB = cv2.cvtColor(left_rectified, cv2.COLOR_BGR2RGB)
+    right_RGB = cv2.cvtColor(right_rectified, cv2.COLOR_BGR2RGB)
 
+    # Create Trackbars for hyperparameters
     cv2.namedWindow('Hyperparameters', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Hyperparameters', 700, 400)
 
     cv2.createTrackbar('numDisparities', 'Hyperparameters', 1, 20, nothing)
-    cv2.createTrackbar('blockSize', 'Hyperparameters', 5, 50, nothing)
-    cv2.createTrackbar('preFilterCap', 'Hyperparameters', 5, 62, nothing)
-    cv2.createTrackbar('uniquenessRatio', 'Hyperparameters', 10, 100, nothing)
-    cv2.createTrackbar('speckleWindowSize', 'Hyperparameters', 3, 25, nothing)
+    cv2.createTrackbar('blockSize', 'Hyperparameters', 5, 22, nothing)
+    cv2.createTrackbar('preFilterCap', 'Hyperparameters', 31, 62, nothing)
+    cv2.createTrackbar('uniquenessRatio', 'Hyperparameters', 15, 100, nothing)
+    cv2.createTrackbar('speckleWindowSize', 'Hyperparameters', 0, 200, nothing)
     cv2.createTrackbar('speckleRange', 'Hyperparameters', 0, 100, nothing)
-    cv2.createTrackbar('disp12MaxDiff', 'Hyperparameters', 5, 25, nothing)
+    cv2.createTrackbar('disp12MaxDiff', 'Hyperparameters', 1, 25, nothing)
     cv2.createTrackbar('minDisparity', 'Hyperparameters', 0, 25, nothing)
-
 
     cv2.namedWindow('Disparity', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Disparity', 700, 400)
@@ -133,24 +118,26 @@ if __name__ == '__main__':
 
     while True:
         numDisparities = cv2.getTrackbarPos('numDisparities', 'Hyperparameters') * 16
+        if numDisparities == 0:
+            numDisparities = 16
         blockSize = cv2.getTrackbarPos('blockSize', 'Hyperparameters') * 2 + 5
         preFilterCap = cv2.getTrackbarPos('preFilterCap', 'Hyperparameters')
         uniquenessRatio = cv2.getTrackbarPos('uniquenessRatio', 'Hyperparameters')
-        speckleWindowSize = cv2.getTrackbarPos('speckleWindowSize', 'Hyperparameters') * 2
+        speckleWindowSize = cv2.getTrackbarPos('speckleWindowSize', 'Hyperparameters')
         speckleRange = cv2.getTrackbarPos('speckleRange', 'Hyperparameters')
         disp12MaxDiff = cv2.getTrackbarPos('disp12MaxDiff', 'Hyperparameters')
         minDisparity = cv2.getTrackbarPos('minDisparity', 'Hyperparameters')
 
-        disparity_image = depth_map(gray_left, gray_right, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity)
-
-        # Convert disparity map to depth map
-        depth_image = disparity_to_depth(disparity_image, focal_length, baseline)
+        disparity_image = get_stereo_map(
+            left_RGB, right_RGB, focal_length, baseline, numDisparities, blockSize,
+            preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity
+        )
 
         cv2.imshow('Disparity', disparity_image)
-        cv2.imshow('Depth', depth_image)
+        cv2.imshow('Depth', disparity_image)
         cv2.imshow('Hyperparameters', leftFrame)  
 
-        if cv2.waitKey(1) == 27:
-            break 
+        if cv2.waitKey(1) & 0xFF == 27:  # ESC key
+            break
 
     cv2.destroyAllWindows()
