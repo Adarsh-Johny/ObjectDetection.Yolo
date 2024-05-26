@@ -26,3 +26,5 @@ __pycache__/
 Project_Files/depth_output_2/*
 Project_Files/.DS_Store
 .DS_Store
+Disparity_map_gui.py
+depthmap_test.py
