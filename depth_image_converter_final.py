@@ -238,7 +238,7 @@ def process_images(left_folder, right_folder, output_folder, calib_folder):
 
             # Set default parameters for depth map calculation
             numDisparities = 16 * 6
-            blockSize = 11
+            blockSize = 5
             preFilterCap = 31
             uniquenessRatio = 15
             speckleWindowSize = 200
@@ -284,7 +284,7 @@ def process_images(left_folder, right_folder, output_folder, calib_folder):
 # Paths for training and test datasets
 train_left_folder = base_folder+'Project_Files/left/training'
 train_right_folder = base_folder+'Project_Files/right/training'
-train_output_folder =  base_folder+'Project_Files/May_28'
+train_output_folder =  base_folder+'Project_Files/May_28_1'
 colored_output_folder =  base_folder+'Project_Files/colored'
 train_calib_folder = base_folder+ 'Project_Files/calib/training'
 
