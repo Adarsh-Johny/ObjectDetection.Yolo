@@ -179,7 +179,6 @@ def disparity_to_depth(disparity, focal_length, baseline):
     return depth
 
 
-
 base_folder = "./"
 # Load camera calibration data
 def load_calib(calib_file):
@@ -194,6 +193,7 @@ def load_calib(calib_file):
 def process__depth_images(left_folder, right_folder, output_folder, calib_folder,out_folder_final,process_colored=False):
     # List all files in the left folder
     left_files = os.listdir(left_folder)
+    count = 0
     for left_file in left_files:
         if left_file.endswith('.png'):
             # Form corresponding paths for left and right images and calibration data
@@ -248,12 +248,32 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
 
             disparity_image = depth_map_fn(gray_left, gray_right, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity)
             
-            output_file_disparity = os.path.join(output_folder,'disparity',out_folder_final, left_file)
+            # output_file_disparity = os.path.join(output_folder,'disparity',out_folder_final, left_file)
             
-            success =  cv2.imwrite(output_file_disparity, disparity_image)
+            # success =  cv2.imwrite(output_file_disparity, disparity_image)
 
-            if process_colored:
-                colored_dispartiy = fill_depth_colorization(left_image,disparity_image)
+           
+            # Convert disparity to depth
+            depth_map = np.zeros(disparity_image.shape, dtype=np.float32)
+            valid_disp_mask = disparity_image > 0
+            depth_map[valid_disp_mask] = focal_length * baseline / disparity_image[valid_disp_mask]
+
+            # Percentile-based normalization to handle outliers
+            valid_depth_values = depth_map[valid_disp_mask]
+            lower_percentile = np.percentile(valid_depth_values, 5)
+            upper_percentile = np.percentile(valid_depth_values, 95)
+
+            depth_map_clipped = np.clip(depth_map, lower_percentile, upper_percentile)
+            depth_map_normalized = cv2.normalize(depth_map_clipped, None, 0, 255, cv2.NORM_MINMAX)
+            depth_map_normalized = np.uint8(depth_map_normalized)
+            
+            non_zero_indices = np.nonzero(depth_map_normalized)
+            min_row, max_row = np.min(non_zero_indices[0]), np.max(non_zero_indices[0])
+            min_col, max_col = np.min(non_zero_indices[1]), np.max(non_zero_indices[1])
+            cropped_depth_map = depth_map_normalized[min_row:max_row+1, min_col:max_col+1]
+
+            # if process_colored:
+            #     colored_dispartiy = fill_depth_colorization(left_image,disparity_image)
             
             # plt.imshow(colored_dispartiy)
             # plt.show()
@@ -261,34 +281,35 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             # plt.imshow(left_image)
             # plt.show()
             
-            depth_image = disparity_to_depth(disparity_image,focal_length,baseline)
+            # depth_image = disparity_to_depth(disparity_image,focal_length,baseline)
             output_file_depth = os.path.join(output_folder,'depth',out_folder_final, left_file)
-            success_depth =  cv2.imwrite(output_file_depth, depth_image)
+            success_depth =  cv2.imwrite(output_file_depth, cropped_depth_map)
 
-            output_file_colored = os.path.join(output_folder,'colored',out_folder_final, left_file)
+            # output_file_colored = os.path.join(output_folder,'colored',out_folder_final, left_file)
 
-            if process_colored:
-                plt.imshow(colored_dispartiy, cmap='viridis')
-            else:
-                plt.imshow(disparity_image, cmap='viridis')
+            # if process_colored:
+            #     plt.imshow(colored_dispartiy, cmap='viridis')
+            # else:
+            #     plt.imshow(disparity_image, cmap='viridis')
                 
-            plt.axis('off')
-            plt.savefig(output_file_colored, bbox_inches='tight', pad_inches=0)
-            plt.close()
+            # plt.axis('off')
+            # plt.savefig(output_file_colored, bbox_inches='tight', pad_inches=0)
+            # plt.close()
             
-            if success and success_depth:
-                print("Depth map and disparity saved successfully.")
+            if  success_depth:
+                print("Depth map and disparity saved successfully - ",count)
             else:
-                print("Error: Unable to save depth map.")
+                print("Error: Unable to save depth map - ",count)
+            count+=1
 
 
-# Paths for training and test datasets
-train_left_folder = base_folder+'Project_Files/left/training'
-train_right_folder = base_folder+'Project_Files/right/training'
-train_output_folder =  base_folder+'Project_Files/'
-colored_output_folder =  base_folder+'Project_Files/'
-train_calib_folder = base_folder+ 'Project_Files/calib/training'
+# # Paths for training and test datasets
+# train_left_folder = base_folder+'Project_Files/left/training'
+# train_right_folder = base_folder+'Project_Files/right/training'
+# train_output_folder =  base_folder+'Project_Files/'
+# colored_output_folder =  base_folder+'Project_Files/'
+# train_calib_folder = base_folder+ 'Project_Files/calib/training'
 
 
-# Process training images
-process__depth_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder,'May_29', True)
+# # Process training images
+# process__depth_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder,'May_29', False)

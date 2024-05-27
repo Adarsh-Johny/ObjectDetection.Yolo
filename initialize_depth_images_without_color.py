@@ -82,10 +82,10 @@ out_train_folder = 'images/train'
 
 # Process training images
 process__depth_images(images_train_dest_dir, images_train_dest_dir_right, depth_base_out_folder, train_calib_folder, out_train_folder)
-labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/disparity/labels/train')
-labels_copier.copy_files()
-labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/colored/labels/train')
-labels_copier.copy_files()
+# labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/disparity/labels/train')
+# labels_copier.copy_files()
+# labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/colored/labels/train')
+# labels_copier.copy_files()
 labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/depth/labels/train')
 labels_copier.copy_files()
 
@@ -95,18 +95,18 @@ testing_calib_folder = '../Project_Files/calib/testing/calib'
 out_test_folder = 'images/test'
 
 process__depth_images(images_test_dest_dir, images_test_dest_dir_right, depth_base_out_folder, testing_calib_folder, out_test_folder)
-labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/disparity/labels/test')
-labels_copier.copy_files()
-labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/colored/labels/test')
-labels_copier.copy_files()
+# labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/disparity/labels/test')
+# labels_copier.copy_files()
+# labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/colored/labels/test')
+# labels_copier.copy_files()
 labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset_without_color/depth/labels/test')
 labels_copier.copy_files()
 
 
 # Split the dataset into training and validation sets - DISPARITY
-num_val_files = 481
-splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/disparity/images/train',  '../Project_Files/depth_dataset_without_color/disparity/labels/train', '../Project_Files/depth_dataset_without_color/disparity/images/val', '../Project_Files/depth_dataset_without_color/disparity/labels/val', num_val_files)
-splitter.split()
+# num_val_files = 481
+# splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/disparity/images/train',  '../Project_Files/depth_dataset_without_color/disparity/labels/train', '../Project_Files/depth_dataset_without_color/disparity/images/val', '../Project_Files/depth_dataset_without_color/disparity/labels/val', num_val_files)
+# splitter.split()
 
 # Split the dataset into training and validation sets - DEPTH
 num_val_files = 481
@@ -114,6 +114,6 @@ splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/depth/i
 splitter.split()
 
 # Split the dataset into training and validation sets - COLORED
-num_val_files = 481
-splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/colored/images/train',  '../Project_Files/depth_dataset_without_color/colored/labels/train', '../Project_Files/depth_dataset_without_color/colored/images/val', '../Project_Files/depth_dataset_without_color/colored/labels/val', num_val_files)
-splitter.split()
+# num_val_files = 481
+# splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/colored/images/train',  '../Project_Files/depth_dataset_without_color/colored/labels/train', '../Project_Files/depth_dataset_without_color/colored/images/val', '../Project_Files/depth_dataset_without_color/colored/labels/val', num_val_files)
+# splitter.split()
