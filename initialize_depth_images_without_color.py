@@ -104,19 +104,16 @@ labels_copier.copy_files()
 
 
 # Split the dataset into training and validation sets - DISPARITY
-train_disparity = os.path.join(depth_base_out_folder,'disparity',out_train_folder)
 num_val_files = 481
 splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/disparity/images/train',  '../Project_Files/depth_dataset_without_color/disparity/labels/train', '../Project_Files/depth_dataset_without_color/disparity/images/val', '../Project_Files/depth_dataset_without_color/disparity/labels/val', num_val_files)
 splitter.split()
 
 # Split the dataset into training and validation sets - DEPTH
-train_depth= os.path.join(depth_base_out_folder,'colored',out_train_folder)
 num_val_files = 481
-splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/depth/images/train',  '../Project_Files/depth_dataset_without_color/colored/labels/train','../Project_Files/depth_dataset_without_color/colored/images/val', '../Project_Files/depth_dataset_without_color/colored/labels/val', num_val_files)
+splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/depth/images/train',  '../Project_Files/depth_dataset_without_color/depth/labels/train','../Project_Files/depth_dataset_without_color/depth/images/val', '../Project_Files/depth_dataset_without_color/depth/labels/val', num_val_files)
 splitter.split()
 
 # Split the dataset into training and validation sets - COLORED
-train_colored = os.path.join(depth_base_out_folder,'depth',out_train_folder)
 num_val_files = 481
-splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/colored/images/train',  '../Project_Files/depth_dataset_without_color/depth/labels/train', '../Project_Files/depth_dataset_without_color/depth/images/val', '../Project_Files/depth_dataset_without_color/depth/labels/val', num_val_files)
+splitter = DatasetSplitter('../Project_Files/depth_dataset_without_color/colored/images/train',  '../Project_Files/depth_dataset_without_color/colored/labels/train', '../Project_Files/depth_dataset_without_color/colored/images/val', '../Project_Files/depth_dataset_without_color/colored/labels/val', num_val_files)
 splitter.split()
