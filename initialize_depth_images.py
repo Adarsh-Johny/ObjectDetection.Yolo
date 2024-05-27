@@ -112,11 +112,11 @@ splitter.split()
 # Split the dataset into training and validation sets - DEPTH
 train_depth= os.path.join(depth_base_out_folder,'colored',out_train_folder)
 num_val_files = 481
-splitter = DatasetSplitter('../Project_Files/depth_dataset/depth/images/train',  '../Project_Files/depth_dataset/colored/labels/train','../Project_Files/depth_dataset/colored/images/val', '../Project_Files/depth_dataset/colored/labels/val', num_val_files)
+splitter = DatasetSplitter('../Project_Files/depth_dataset/depth/images/train',  '../Project_Files/depth_dataset/depth/labels/train','../Project_Files/depth_dataset/depth/images/val', '../Project_Files/depth_dataset/depth/labels/val', num_val_files)
 splitter.split()
 
 # Split the dataset into training and validation sets - COLORED
 train_colored = os.path.join(depth_base_out_folder,'depth',out_train_folder)
 num_val_files = 481
-splitter = DatasetSplitter('../Project_Files/depth_dataset/colored/images/train',  '../Project_Files/depth_dataset/depth/labels/train', '../Project_Files/depth_dataset/depth/images/val', '../Project_Files/depth_dataset/depth/labels/val', num_val_files)
+splitter = DatasetSplitter('../Project_Files/depth_dataset/colored/images/train',  '../Project_Files/depth_dataset/colored/labels/train', '../Project_Files/depth_dataset/colored/images/val', '../Project_Files/depth_dataset/colored/labels/val', num_val_files)
 splitter.split()
