@@ -81,7 +81,7 @@ depth_base_out_folder = '../Project_Files/depth_dataset'
 out_train_folder = 'images/train'
 
 # Process training images
-process__depth_images(images_train_dest_dir, images_train_dest_dir_right, depth_base_out_folder, train_calib_folder, out_train_folder)
+process__depth_images(images_train_dest_dir, images_train_dest_dir_right, depth_base_out_folder, train_calib_folder, out_train_folder,True)
 labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset/disparity/labels/train')
 labels_copier.copy_files()
 labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset/colored/labels/train')
@@ -94,7 +94,7 @@ testing_calib_folder = '../Project_Files/calib/testing/calib'
 
 out_test_folder = 'images/test'
 
-process__depth_images(images_test_dest_dir, images_test_dest_dir_right, depth_base_out_folder, testing_calib_folder, out_test_folder)
+process__depth_images(images_test_dest_dir, images_test_dest_dir_right, depth_base_out_folder, testing_calib_folder, out_test_folder,True)
 labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset/disparity/labels/test')
 labels_copier.copy_files()
 labels_copier = FileCopier(labels_src_dir, '../Project_Files/depth_dataset/colored/labels/test')
