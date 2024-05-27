@@ -24,7 +24,7 @@ SBATCH --cpus-per-task 16
 
 echo "Now processing task id:: ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 mkdir "log_${SLURM_JOB_ID}"
-python yolov5-traffic-monitoring/train.py --img 640 --batch 8 --epochs 5 --data depth_images.yaml --cfg yolov5-traffic-monitoring/models/custom_yolov5l.yaml --weights yolov5l.pt --cache True  --rect --workers 0 --name kitti_yolov5l --multi-scale > output_${SLURM_JOB_ID}.txt
+python initialize_depth_images_without_color.py > output_${SLURM_JOB_ID}.txt
 
 echo "finished task with id:: ${SLURM_JOB_ID}"
 # happy end
