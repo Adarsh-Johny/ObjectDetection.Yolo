@@ -191,7 +191,7 @@ def load_calib(calib_file):
         # Pad P0 with a bottom row of [0, 0, 0, 1] to make it 4x4
         P0 = np.vstack((P0, np.array([0, 0, 0, 1])))
     return P0, P1
-def process_images(left_folder, right_folder, output_folder, calib_folder):
+def process__depth_images(left_folder, right_folder, output_folder, calib_folder,out_folder_final):
     # List all files in the left folder
     left_files = os.listdir(left_folder)
     for left_file in left_files:
@@ -248,46 +248,30 @@ def process_images(left_folder, right_folder, output_folder, calib_folder):
 
             disparity_image = depth_map_fn(gray_left, gray_right, numDisparities, blockSize, preFilterCap, uniquenessRatio, speckleWindowSize, speckleRange, disp12MaxDiff, minDisparity)
             
-            output_file = os.path.join(output_folder, left_file)
+            output_file_disparity = os.path.join(output_folder,'disparity',out_folder_final, left_file)
             
-            success =  cv2.imwrite(output_file, disparity_image)
+            success =  cv2.imwrite(output_file_disparity, disparity_image)
 
             colored_dispartiy = fill_depth_colorization(left_image,disparity_image)
             
-            plt.imshow(colored_dispartiy)
-            plt.show()
+            # plt.imshow(colored_dispartiy)
+            # plt.show()
             
             # plt.imshow(left_image)
             # plt.show()
             
-            # output_file = os.path.join(output_folder, left_file.replace('.png', '_depth_colored.png'))
-            
-            # success = cv2.imwrite(output_file, cv2.cvtColor(colored_dispartiy, cv2.COLOR_RGB2BGR))
+            depth_image = disparity_to_depth(disparity_image,focal_length,baseline)
+            output_file_depth = os.path.join(output_folder,'depth',out_folder_final, left_file)
+            success_depth =  cv2.imwrite(output_file_depth, depth_image)
 
-            # # Save the depth map as a PNG file with the same name in the output folder
-            # print("Saving depth map to:", output_file)
-            # success = cv2.imwrite(output_file, colored_dispartiy)
-    
-            output_file = os.path.join(colored_output_folder, left_file)
-            
+
+            output_file_colored = os.path.join(output_folder,'colored',out_folder_final, left_file)
             plt.imshow(colored_dispartiy, cmap='viridis')
             plt.axis('off')
-            plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
+            plt.savefig(output_file_colored, bbox_inches='tight', pad_inches=0)
             plt.close()
             
-            if success:
-                print("Depth map saved successfully.")
+            if success and success_depth:
+                print("Depth map and disparity saved successfully.")
             else:
-                print("Error: Unable to save depth map.")
-
-
-# Paths for training and test datasets
-train_left_folder = base_folder+'Project_Files/left/training'
-train_right_folder = base_folder+'Project_Files/right/training'
-train_output_folder =  base_folder+'Project_Files/May_28'
-colored_output_folder =  base_folder+'Project_Files/colored'
-train_calib_folder = base_folder+ 'Project_Files/calib/training'
-
-
-# Process training images
-process_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder)
+                print("Error: Unable to save depth map(${success}) or disparity(${success_depth})")
