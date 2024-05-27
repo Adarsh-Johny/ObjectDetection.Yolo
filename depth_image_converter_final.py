@@ -191,7 +191,7 @@ def load_calib(calib_file):
         # Pad P0 with a bottom row of [0, 0, 0, 1] to make it 4x4
         P0 = np.vstack((P0, np.array([0, 0, 0, 1])))
     return P0, P1
-def process__depth_images(left_folder, right_folder, output_folder, calib_folder,out_folder_final):
+def process__depth_images(left_folder, right_folder, output_folder, calib_folder,out_folder_final,process_colored=False):
     # List all files in the left folder
     left_files = os.listdir(left_folder)
     for left_file in left_files:
@@ -252,7 +252,8 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             
             success =  cv2.imwrite(output_file_disparity, disparity_image)
 
-            colored_dispartiy = fill_depth_colorization(left_image,disparity_image)
+            if process_colored:
+                colored_dispartiy = fill_depth_colorization(left_image,disparity_image)
             
             # plt.imshow(colored_dispartiy)
             # plt.show()
@@ -264,9 +265,13 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             output_file_depth = os.path.join(output_folder,'depth',out_folder_final, left_file)
             success_depth =  cv2.imwrite(output_file_depth, depth_image)
 
-
             output_file_colored = os.path.join(output_folder,'colored',out_folder_final, left_file)
-            plt.imshow(colored_dispartiy, cmap='viridis')
+
+            if process_colored:
+                plt.imshow(colored_dispartiy, cmap='viridis')
+            else:
+                plt.imshow(disparity_image, cmap='viridis')
+                
             plt.axis('off')
             plt.savefig(output_file_colored, bbox_inches='tight', pad_inches=0)
             plt.close()
