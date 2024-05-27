@@ -1,4 +1,3 @@
-
 #!/bin/bash -l
 
 #SBATCH --job-name=Project_Viscando
