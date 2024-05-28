@@ -259,8 +259,8 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             depth_map[valid_disp_mask] = focal_length * baseline / disparity_image[valid_disp_mask]
 
             # Consider only depth within 30 meters
-            max_depth = 50.0  # Maximum depth to consider (in meters)
-            depth_map[depth_map > max_depth] = 0  # Set depth beyond 30 meters to 0
+            max_depth = 25.0  # Maximum depth to consider (in meters)
+            depth_map[depth_map > max_depth] = 0  # Set depth beyond 25 meters to 0
 
             # Percentile-based normalization to handle outliers
             valid_depth_values = depth_map[valid_disp_mask]
