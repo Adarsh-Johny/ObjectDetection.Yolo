@@ -258,6 +258,10 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             valid_disp_mask = disparity_image > 0
             depth_map[valid_disp_mask] = focal_length * baseline / disparity_image[valid_disp_mask]
 
+            # Consider only depth within 30 meters
+            max_depth = 50.0  # Maximum depth to consider (in meters)
+            depth_map[depth_map > max_depth] = 0  # Set depth beyond 30 meters to 0
+
             # Percentile-based normalization to handle outliers
             valid_depth_values = depth_map[valid_disp_mask]
             lower_percentile = np.percentile(valid_depth_values, 5)
@@ -267,10 +271,10 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             depth_map_normalized = cv2.normalize(depth_map_clipped, None, 0, 255, cv2.NORM_MINMAX)
             depth_map_normalized = np.uint8(depth_map_normalized)
             
-            non_zero_indices = np.nonzero(depth_map_normalized)
-            min_row, max_row = np.min(non_zero_indices[0]), np.max(non_zero_indices[0])
-            min_col, max_col = np.min(non_zero_indices[1]), np.max(non_zero_indices[1])
-            cropped_depth_map = depth_map_normalized[min_row:max_row+1, min_col:max_col+1]
+            # non_zero_indices = np.nonzero(depth_map_normalized)
+            # min_row, max_row = np.min(non_zero_indices[0]), np.max(non_zero_indices[0])
+            # min_col, max_col = np.min(non_zero_indices[1]), np.max(non_zero_indices[1])
+            # cropped_depth_map = depth_map_normalized[min_row:max_row+1, min_col:max_col+1]
 
             # if process_colored:
             #     colored_dispartiy = fill_depth_colorization(left_image,disparity_image)
@@ -282,8 +286,11 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             # plt.show()
             
             # depth_image = disparity_to_depth(disparity_image,focal_length,baseline)
-            output_file_depth = os.path.join(output_folder,'depth',out_folder_final, left_file)
-            success_depth =  cv2.imwrite(output_file_depth, cropped_depth_map)
+            output_file_depth = os.path.join(output_folder,'colored',out_folder_final, left_file)
+            success_depth =  cv2.imwrite(output_file_depth, depth_map_normalized)
+            
+            depth_colormap = cv2.applyColorMap(depth_map_normalized, cv2.COLORMAP_MAGMA)
+            success_depth =  cv2.imwrite(output_file_depth, depth_colormap)
 
             # output_file_colored = os.path.join(output_folder,'colored',out_folder_final, left_file)
 
@@ -303,7 +310,7 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
             count+=1
 
 
-# # Paths for training and test datasets
+# Paths for training and test datasets
 # train_left_folder = base_folder+'Project_Files/left/training'
 # train_right_folder = base_folder+'Project_Files/right/training'
 # train_output_folder =  base_folder+'Project_Files/'
@@ -312,4 +319,4 @@ def process__depth_images(left_folder, right_folder, output_folder, calib_folder
 
 
 # # Process training images
-# process__depth_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder,'May_29', False)
+# process__depth_images(train_left_folder, train_right_folder, train_output_folder, train_calib_folder,'colored_depth_50', False)
